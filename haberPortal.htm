@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fetch API - Haber Uygulaması</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    #kategoriSec {
+      display: block;
+      margin: 20px auto;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #haberler {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .haber {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .haber img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .haber h3 {
+      color: #0066cc;
+      margin: 10px 0 5px;
+    }
+    .haber p {
+      font-size: 14px;
+      color: #555;
+    }
+    .haber a {
+      display: inline-block;
+      margin-top: 8px;
+      text-decoration: none;
+      color: white;
+      background: #0066cc;
+      padding: 8px 12px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Güncel Haberler</h1>
+
+  <select id="kategoriSec">
+    <option value="general">Genel</option>
+    <option value="technology">Teknoloji</option>
+    <option value="sports">Spor</option>
+    <option value="health">Sağlık</option>
+    <option value="science">Bilim</option>
+    <option value="business">Ekonomi</option>
+    <option value="entertainment">Eğlence</option>
+  </select>
+
+  <div id="haberler">Haberler yükleniyor...</div>
+
+  <script>
+    const apiKey = "2ecd860ec4844658823decf1237d140e"; // 
+    const haberDiv = document.getElementById("haberler");
+    const kategoriSec = document.getElementById("kategoriSec");
+
+    // Sayfa açıldığında varsayılan kategori
+    window.addEventListener("load", () => {
+      haberleriGetir("general");
+    });
+
+    // Kategori değiştiğinde haberleri getir
+    kategoriSec.addEventListener("change", (e) => {
+      haberleriGetir(e.target.value);
+    });
+
+    // 🔹 Haberleri API'den çeken fonksiyon
+    function haberleriGetir(kategori) {
+      haberDiv.innerHTML = "Yükleniyor...";
+
+      fetch(`https://newsapi.org/v2/top-headlines?language=en&category=${kategori}&apiKey=${apiKey}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error("Veri alınamadı!");
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.articles.length === 0) {
+            haberDiv.innerHTML = "Bu kategoride haber bulunamadı.";
+            return;
+          }
+
+          haberDiv.innerHTML = ""; // Önceki içerikleri temizle
+
+          data.articles.forEach(haber => {
+            const haberKutusu = document.createElement("div");
+            haberKutusu.className = "haber";
+            haberKutusu.innerHTML = `
+              <img src="${haber.urlToImage || 'https://via.placeholder.com/300x180'}" alt="Haber Görseli">
+              <h3>${haber.title}</h3>
+              <p>${haber.description || "Açıklama bulunmuyor."}</p>
+              <a href="${haber.url}" target="_blank">Haberi Oku</a>
+            `;
+            haberDiv.appendChild(haberKutusu);
+          });
+        })
+        .catch(error => {
+          haberDiv.innerHTML = "Hata oluştu: " + error.message;
+        });
+    }
+  </script>
+</body>
+</html>
