@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Para Birimi Çevirici – Premium</title>
+
+    <!-- Bayrak ikonları için Flag Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+
+        .card {
+            width: 400px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(18px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: 400;
+        }
+
+        input {
+            padding: 12px;
+            width: 100%;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 12px;
+            font-size: 16px;
+            color: #fff;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #00eaff;
+            box-shadow: 0 0 10px rgba(0,234,255,0.5);
+        }
+
+        /* Custom select */
+        .custom-select {
+            position: relative;
+            width: 100%;
+        }
+
+        .custom-select select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .custom-select select:hover {
+            background: rgba(0, 234, 255, 0.2);
+        }
+
+        /* Bazı tarayıcılarda açılır listede renk kontrolü */
+        .custom-select select option {
+            color: #000;
+            background: #fff;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 10px;
+            font-size: 17px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            background: linear-gradient(135deg, #00f2fe, #4facfe);
+            color: #000;
+            font-weight: 600;
+            transition: 0.25s;
+        }
+
+        button:hover {
+            transform: scale(1.04);
+            box-shadow: 0 0 12px rgba(79, 172, 254, 0.8);
+        }
+
+        #sonuc {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .flag {
+            margin-right: 8px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+    <h2>💱 Premium Para Çevirici</h2>
+
+    <label>Tutar:</label>
+    <input type="number" id="amount" placeholder="Örn: 250" />
+
+    <label>Kaynak Para Birimi:</label>
+    <div class="custom-select">
+        <select id="from">
+            <option value="TRY">🇹🇷 TRY - Türk Lirası</option>
+            <option value="USD">🇺🇸 USD - Dolar</option>
+            <option value="EUR">🇪🇺 EUR - Euro</option>
+            <option value="GBP">🇬🇧 GBP - Sterlin</option>
+        </select>
+    </div>
+
+    <label>Hedef Para Birimi:</label>
+    <div class="custom-select">
+        <select id="to">
+            <option value="USD">🇺🇸 USD - Dolar</option>
+            <option value="TRY">🇹🇷 TRY - Türk Lirası</option>
+            <option value="EUR">🇪🇺 EUR - Euro</option>
+            <option value="GBP">🇬🇧 GBP - Sterlin</option>
+        </select>
+    </div>
+
+    <button onclick="convert()">Dönüştür</button>
+
+    <p id="sonuc"></p>
+</div>
+
+<script>
+async function convert() {
+    const amount = Number(document.getElementById("amount").value);
+    const from = document.getElementById("from").value;
+    const to = document.getElementById("to").value;
+    const sonuc = document.getElementById("sonuc");
+
+    if (!amount) {
+        sonuc.innerHTML = "❗ Lütfen tutar girin.";
+        return;
+    }
+
+    try {
+        const res = await fetch(`https://open.er-api.com/v6/latest/${from}`);
+        const data = await res.json();
+
+        if (data.result !== "success") {
+            sonuc.innerHTML = "API hata döndürdü.";
+            return;
+        }
+
+        const rate = data.rates[to];
+        const result = amount * rate;
+
+        sonuc.innerHTML = `
+            <span style="font-size:18px;">Sonuç:</span><br>
+            <span style="font-size:26px; color:#00eaff;">
+                ${amount} ${from} → ${result.toFixed(2)} ${to}
+            </span>
+        `;
+    }
+    catch (e) {
+        sonuc.innerHTML = "Bağlantı hatası.";
+    }
+}
+</script>
+
+</body>
+</html>
