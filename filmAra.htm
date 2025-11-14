@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎬 Film Dünyası</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header { text-align: center; color: white; margin-bottom: 40px; animation: fadeIn 1s ease-in; }
+        h1 { font-size: 3em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .search-box { margin: 30px auto; max-width: 600px; position: relative; }
+        .search-box input {
+            width: 100%; padding: 15px 50px 15px 20px; border: none; border-radius: 50px;
+            font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .search-box button {
+            position: absolute; right: 5px; top: 5px; padding: 10px 25px;
+            border: none; border-radius: 50px; background: #667eea; color: white;
+            cursor: pointer; font-weight: bold;
+        }
+        .search-box button:hover { background: #764ba2; }
+        .movies-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px; padding: 20px 0;
+        }
+        .movie-card {
+            background: white; border-radius: 15px; overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer; animation: slideUp 0.5s ease-out;
+        }
+        .movie-card:hover { transform: translateY(-10px); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+        .movie-poster { width: 100%; height: 375px; object-fit: cover; background: #f0f0f0; }
+        .movie-info { padding: 15px; }
+        .movie-title { font-size: 1.1em; font-weight: bold; margin-bottom: 10px; color: #333; min-height: 50px; }
+        .movie-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .rating { background: #ffd700; padding: 5px 10px; border-radius: 20px; font-weight: bold; color: #333; }
+        .year { color: #666; font-size: 0.9em; }
+        .loading { text-align: center; color: white; font-size: 1.5em; margin-top: 50px; }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto;
+        }
+        .modal-content {
+            background: white; max-width: 900px; margin: 50px auto; border-radius: 20px;
+            overflow: hidden; position: relative;
+        }
+        .modal-header {
+            position: relative; height: 400px; background-size: cover; background-position: center;
+        }
+        .modal-header::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 100%);
+        }
+        .close-btn {
+            position: absolute; top: 20px; right: 20px; background: white;
+            border: none; width: 40px; height: 40px; border-radius: 50%;
+            font-size: 24px; cursor: pointer; z-index: 10;
+        }
+        .modal-body { padding: 30px; }
+        .modal-title { font-size: 2em; margin-bottom: 15px; color: #333; }
+        .modal-overview { color: #666; line-height: 1.6; margin-bottom: 20px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 Film Dünyası</h1>
+            <p>En popüler filmleri keşfedin</p>
+        </header>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Film ara... (örn: Inception, Matrix)">
+            <button onclick="searchMovies()">Ara</button>
+        </div>
+
+        <div id="moviesContainer" class="movies-grid"></div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">×</button>
+            <div class="modal-header" id="modalHeader"></div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = 'api_key=1cf50e6248dc270629e802686245c2c8';
+        const BASE_URL = 'https://api.themoviedb.org/3';
+        const IMG_URL = 'https://image.tmdb.org/t/p/w500';
+
+        async function loadPopularMovies() {
+            const container = document.getElementById('moviesContainer');
+            container.innerHTML = '<div class="loading">Filmler yükleniyor...</div>';
+            
+            try {
+                const url = `${BASE_URL}/discover/movie?${API_KEY}&language=tr-TR&sort_by=popularity.desc&include_adult=false&page=1`;
+                const response = await fetch(url);
+                
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                
+                const data = await response.json();
+                if (data.results && data.results.length > 0) displayMovies(data.results);
+                else container.innerHTML = '<div class="loading">Film bulunamadı.</div>';
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `<div class="loading">Bir hata oluştu: ${error.message}</div>`;
+            }
+        }
+
+        async function searchMovies() {
+            const query = document.getElementById('searchInput').value.trim();
+            const container = document.getElementById('moviesContainer');
+            if (!query) { loadPopularMovies(); return; }
+
+            container.innerHTML = '<div class="loading">Aranıyor...</div>';
+            try {
+                const url = `${BASE_URL}/search/movie?${API_KEY}&language=tr-TR&query=${encodeURIComponent(query)}&page=1`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                const data = await response.json();
+                if (data.results && data.results.length > 0) displayMovies(data.results);
+                else container.innerHTML = '<div class="loading">Hiç film bulunamadı. Başka bir şey deneyin.</div>';
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `<div class="loading">Arama hatası: ${error.message}</div>`;
+            }
+        }
+
+        function displayMovies(movies) {
+            const container = document.getElementById('moviesContainer');
+            container.innerHTML = '';
+            movies.forEach((movie, index) => {
+                const movieCard = document.createElement('div');
+                movieCard.className = 'movie-card';
+                movieCard.style.animationDelay = `${index * 0.1}s`;
+                movieCard.onclick = () => showMovieDetails(movie.id);
+
+                const posterPath = movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/250x375/667eea/ffffff?text=Poster+Yok';
+                const rating = movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A';
+                const year = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
+
+                movieCard.innerHTML = `
+                    <img src="${posterPath}" alt="${movie.title}" class="movie-poster" onerror="this.src='https://via.placeholder.com/250x375/667eea/ffffff?text=Poster+Yok'">
+                    <div class="movie-info">
+                        <div class="movie-title">${movie.title}</div>
+                        <div class="movie-meta">
+                            <span class="rating">⭐ ${rating}</span>
+                            <span class="year">${year}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(movieCard);
+            });
+        }
+
+        async function showMovieDetails(movieId) {
+            try {
+                const url = `${BASE_URL}/movie/${movieId}?${API_KEY}&language=tr-TR`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                const movie = await response.json();
+
+                const modal = document.getElementById('modal');
+                const modalHeader = document.getElementById('modalHeader');
+                const modalBody = document.getElementById('modalBody');
+
+                const backdropPath = movie.backdrop_path ? IMG_URL + movie.backdrop_path : 'https://via.placeholder.com/900x400/667eea/ffffff?text=Görsel+Yok';
+                modalHeader.style.backgroundImage = `url(${backdropPath})`;
+
+                const genres = movie.genres ? movie.genres.map(g => g.name).join(', ') : 'Belirtilmemiş';
+                const runtime = movie.runtime ? movie.runtime + ' dakika' : 'Belirtilmemiş';
+
+                modalBody.innerHTML = `
+                    <h2 class="modal-title">${movie.title}</h2>
+                    <div class="movie-meta" style="margin-bottom: 20px;">
+                        <span class="rating">⭐ ${movie.vote_average ? movie.vote_average.toFixed(1) : 'N/A'}</span>
+                        <span class="year">${movie.release_date ? movie.release_date.split('-')[0] : 'N/A'}</span>
+                    </div>
+                    <p class="modal-overview">${movie.overview || 'Açıklama bulunmuyor.'}</p>
+                    <p><strong>Süre:</strong> ${runtime}</p>
+                    <p><strong>Tür:</strong> ${genres}</p>
+                `;
+                modal.style.display = 'block';
+            } catch (error) {
+                console.error(error);
+                alert('Film detayları yüklenirken bir hata oluştu.');
+            }
+        }
+
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchMovies();
+        });
+
+        window.onclick = (e) => {
+            const modal = document.getElementById('modal');
+            if (e.target === modal) closeModal();
+        };
+
+        // Sayfa yüklendiğinde popüler filmleri getir
+        loadPopularMovies();
+    </script>
+</body>
+</html>
